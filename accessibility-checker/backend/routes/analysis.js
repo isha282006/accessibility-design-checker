@@ -9,8 +9,8 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// FIXED JIMP IMPORT
-const Jimp = require("jimp");
+// FIXED JIMP IMPORT (important for Render)
+const Jimp = require("jimp").default || require("jimp");
 
 // =============================
 // Multer Storage Config
@@ -36,8 +36,12 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const allowed = ["image/jpeg", "image/png", "image/webp"];
-    if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only JPG, PNG, WEBP allowed"));
+
+    if (allowed.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only JPG, PNG, WEBP allowed"));
+    }
   },
 });
 
@@ -47,6 +51,7 @@ const upload = multer({
 
 router.post("/upload", upload.single("image"), async (req, res) => {
   try {
+
     if (!req.file) {
       return res.status(400).json({
         success: false,
@@ -66,22 +71,31 @@ router.post("/upload", upload.single("image"), async (req, res) => {
     });
 
   } catch (err) {
+
     console.error("Analysis error:", err);
 
     return res.status(500).json({
       success: false,
       error: err.message || "Image analysis failed",
     });
+
   }
 });
 
 // =============================
-// IMAGE ANALYSIS
+// IMAGE ANALYSIS FUNCTION
 // =============================
 
 async function analyzeImage(filePath) {
 
-  const image = await Jimp.read(filePath);
+  let image;
+
+  try {
+    image = await Jimp.read(filePath);
+  } catch (err) {
+    console.error("Jimp read error:", err);
+    throw new Error("Image processing failed");
+  }
 
   const width = image.bitmap.width;
   const height = image.bitmap.height;
@@ -101,6 +115,7 @@ async function analyzeImage(filePath) {
       );
 
       pixels.push(rgba);
+
     }
   }
 
@@ -122,6 +137,7 @@ async function analyzeImage(filePath) {
     );
 
     if (ratio < 3) lowContrast++;
+
   }
 
   const lowContrastPercent =
@@ -148,7 +164,7 @@ async function analyzeImage(filePath) {
     });
   }
 
-  // Score calculation
+  // Score Calculation
 
   const penalties = { high: 20, medium: 10, low: 5 };
 
@@ -164,6 +180,7 @@ async function analyzeImage(filePath) {
     totalIssues: issues.length,
     issues,
   };
+
 }
 
 // =============================
@@ -183,6 +200,7 @@ function relativeLuminance(r, g, b) {
   });
 
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
+
 }
 
 function contrastRatio(l1, l2) {
@@ -191,6 +209,7 @@ function contrastRatio(l1, l2) {
   const darker = Math.min(l1, l2);
 
   return (lighter + 0.05) / (darker + 0.05);
+
 }
 
 module.exports = router;
