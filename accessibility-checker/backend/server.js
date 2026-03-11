@@ -11,13 +11,14 @@ const app = express();
 const PORT = process.env.PORT || 3001;
 
 // =======================
-// CORS CONFIG (important)
+// CORS CONFIG
 // =======================
 
 app.use(
   cors({
-    origin: "*", // allow frontend from Vercel
-    methods: ["GET", "POST"],
+    origin: "*",
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type"],
   })
 );
 
@@ -39,6 +40,17 @@ if (!fs.existsSync(uploadsDir)) {
 }
 
 app.use("/uploads", express.static(uploadsDir));
+
+// =======================
+// ROOT ROUTE (IMPORTANT)
+// =======================
+
+app.get("/", (req, res) => {
+  res.json({
+    status: "running",
+    message: "Accessibility Design Checker API working",
+  });
+});
 
 // =======================
 // API ROUTES
@@ -76,6 +88,6 @@ app.use((err, req, res, next) => {
 // START SERVER
 // =======================
 
-app.listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`Server running on port ${PORT}`);
 });
