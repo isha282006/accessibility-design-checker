@@ -7,7 +7,8 @@ import { useState, useCallback } from 'react'
 import axios from 'axios'
 import toast from 'react-hot-toast'
 
-const API = '/api'
+// Backend URL on Render
+const API = 'https://accessibility-design-checker.onrender.com/api'
 
 // ─── useImageAnalysis ─────────────────────────────────────────
 export function useImageAnalysis() {
@@ -72,7 +73,7 @@ export function useReportDownload() {
         { analysis, filename },
         { responseType: 'blob' }
       )
-      // Create a download link and trigger it
+
       const url = URL.createObjectURL(response.data)
       const a = document.createElement('a')
       a.href = url
@@ -81,6 +82,7 @@ export function useReportDownload() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
+
       toast.success('Report downloaded!')
     } catch (err) {
       toast.error('Failed to generate report')
