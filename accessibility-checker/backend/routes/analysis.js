@@ -9,8 +9,8 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 
-// FIXED JIMP IMPORT (important for Render)
-const Jimp = require("jimp").default || require("jimp");
+// FIXED JIMP IMPORT
+const Jimp = require("jimp");
 
 // =============================
 // Multer Storage Config
@@ -64,6 +64,7 @@ router.post("/upload", upload.single("image"), async (req, res) => {
       fileUrl: `/uploads/${req.file.filename}`,
       analysis: result,
     });
+
   } catch (err) {
     console.error("Analysis error:", err);
 
@@ -79,12 +80,14 @@ router.post("/upload", upload.single("image"), async (req, res) => {
 // =============================
 
 async function analyzeImage(filePath) {
+
   const image = await Jimp.read(filePath);
 
   const width = image.bitmap.width;
   const height = image.bitmap.height;
 
   const sampleSize = 50;
+
   const stepX = Math.max(1, Math.floor(width / sampleSize));
   const stepY = Math.max(1, Math.floor(height / sampleSize));
 
@@ -92,6 +95,7 @@ async function analyzeImage(filePath) {
 
   for (let y = 0; y < height; y += stepY) {
     for (let x = 0; x < width; x += stepX) {
+
       const rgba = Jimp.intToRGBA(
         image.getPixelColor(x, y)
       );
@@ -100,7 +104,7 @@ async function analyzeImage(filePath) {
     }
   }
 
-  const luminances = pixels.map((p) =>
+  const luminances = pixels.map(p =>
     relativeLuminance(p.r, p.g, p.b)
   );
 
@@ -111,6 +115,7 @@ async function analyzeImage(filePath) {
   let lowContrast = 0;
 
   for (let i = 0; i < luminances.length - 1; i++) {
+
     const ratio = contrastRatio(
       luminances[i],
       luminances[i + 1]
@@ -128,8 +133,7 @@ async function analyzeImage(filePath) {
     issues.push({
       type: "Color Contrast",
       severity: "high",
-      description:
-        "Large areas have insufficient contrast",
+      description: "Large areas have insufficient contrast",
       wcag: "WCAG 1.4.3",
     });
   }
@@ -167,18 +171,22 @@ async function analyzeImage(filePath) {
 // =============================
 
 function relativeLuminance(r, g, b) {
-  const [rs, gs, bs] = [r, g, b].map((c) => {
+
+  const [rs, gs, bs] = [r, g, b].map(c => {
+
     const s = c / 255;
 
     return s <= 0.03928
       ? s / 12.92
       : Math.pow((s + 0.055) / 1.055, 2.4);
+
   });
 
   return 0.2126 * rs + 0.7152 * gs + 0.0722 * bs;
 }
 
 function contrastRatio(l1, l2) {
+
   const lighter = Math.max(l1, l2);
   const darker = Math.min(l1, l2);
 
